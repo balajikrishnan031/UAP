@@ -1,0 +1,37 @@
+Domain,Record_ID,Features_Summary,Actual_Ground_Truth,UAP_Predicted,Match_Result,Safety_Decision,Confidence
+Diagnostic Oncology,breast_cancer.csv_sample_1,"mean radius=19.55, mean texture=28.77, mean perimeter=133.6",0 [Malignant (Cancer)],0 [Malignant (Cancer)],[CORRECT MATCH],SAFE_TO_PREDICT,99.6%
+Diagnostic Oncology,breast_cancer.csv_sample_2,"mean radius=11.13, mean texture=16.62, mean perimeter=70.47",1 [Benign (Healthy)],1 [Benign (Healthy)],[CORRECT MATCH],SAFE_TO_PREDICT,99.7%
+Diagnostic Oncology,breast_cancer.csv_sample_3,"mean radius=13.82, mean texture=24.49, mean perimeter=92.33",0 [Malignant (Cancer)],0 [Malignant (Cancer)],[CORRECT MATCH],SAFE_TO_PREDICT,96.1%
+Clinical Cardiology,heart_disease.csv_sample_1,"age=59.0, sex=1.0, cp=4.0",0 [Healthy Heart],0 [Healthy Heart],[CORRECT MATCH],ABSTAIN_HUMAN_REVIEW,57.0%
+Clinical Cardiology,heart_disease.csv_sample_2,"age=66.0, sex=1.0, cp=4.0",0 [Healthy Heart],1 [Heart Disease Present],[MISCLASSIFICATION],SAFE_TO_PREDICT,60.7%
+Clinical Cardiology,heart_disease.csv_sample_3,"age=51.0, sex=0.0, cp=3.0",0 [Healthy Heart],0 [Healthy Heart],[CORRECT MATCH],SAFE_TO_PREDICT,89.9%
+Banking & Credit Risk,credit_risk.csv_sample_1,"fin_feature_1=2.0, fin_feature_2=18.0, fin_feature_3=2.0",0 [Credit Approved / Low Risk],0 [Credit Approved / Low Risk],[CORRECT MATCH],ABSTAIN_HUMAN_REVIEW,56.5%
+Banking & Credit Risk,credit_risk.csv_sample_2,"fin_feature_1=2.0, fin_feature_2=12.0, fin_feature_3=4.0",0 [Credit Approved / Low Risk],0 [Credit Approved / Low Risk],[CORRECT MATCH],SAFE_TO_PREDICT,93.2%
+Banking & Credit Risk,credit_risk.csv_sample_3,"fin_feature_1=1.0, fin_feature_2=24.0, fin_feature_3=3.0",1 [Loan Default Risk],1 [Loan Default Risk],[CORRECT MATCH],SAFE_TO_PREDICT,78.6%
+Fintech & Fraud Detection,fraud_detection.csv_sample_1,"ratio_to_median_price=0.15, distance_from_home_km=9.6, used_chip=1.0",0 [Legitimate Transaction],0 [Legitimate Transaction],[CORRECT MATCH],SAFE_TO_PREDICT,97.8%
+Fintech & Fraud Detection,fraud_detection.csv_sample_2,"ratio_to_median_price=2.65, distance_from_home_km=45.7, used_chip=1.0",0 [Legitimate Transaction],0 [Legitimate Transaction],[CORRECT MATCH],SAFE_TO_PREDICT,96.9%
+Fintech & Fraud Detection,fraud_detection.csv_sample_3,"ratio_to_median_price=0.14, distance_from_home_km=9.9, used_chip=0.0",0 [Legitimate Transaction],0 [Legitimate Transaction],[CORRECT MATCH],SAFE_TO_PREDICT,97.0%
+Industrial IoT Maintenance,iot_maintenance.csv_sample_1,"air_temperature_K=302.6, rotational_speed_rpm=1220.8, torque_Nm=35.25",0 [Machine Operating Normally],0 [Machine Operating Normally],[CORRECT MATCH],SAFE_TO_PREDICT,73.3%
+Industrial IoT Maintenance,iot_maintenance.csv_sample_2,"air_temperature_K=301.08, rotational_speed_rpm=1419.1, torque_Nm=42.07",0 [Machine Operating Normally],0 [Machine Operating Normally],[CORRECT MATCH],SAFE_TO_PREDICT,98.6%
+Industrial IoT Maintenance,iot_maintenance.csv_sample_3,"air_temperature_K=297.82, rotational_speed_rpm=1300.8, torque_Nm=35.39",0 [Machine Operating Normally],0 [Machine Operating Normally],[CORRECT MATCH],SAFE_TO_PREDICT,65.6%
+Telecom Customer Churn,telecom_churn.csv_sample_1,"tenure_months=22.0, monthly_charges=91.86, customer_service_calls=1.0",0 [Retained Customer],0 [Retained Customer],[CORRECT MATCH],SAFE_TO_PREDICT,61.6%
+Telecom Customer Churn,telecom_churn.csv_sample_2,"tenure_months=21.0, monthly_charges=24.55, customer_service_calls=0.0",0 [Retained Customer],0 [Retained Customer],[CORRECT MATCH],SAFE_TO_PREDICT,71.3%
+Telecom Customer Churn,telecom_churn.csv_sample_3,"tenure_months=59.0, monthly_charges=108.32, customer_service_calls=3.0",0 [Retained Customer],0 [Retained Customer],[CORRECT MATCH],SAFE_TO_PREDICT,64.7%
+Smart Agriculture Recommendation,agriculture_crop.csv_sample_1,"nitrogen_N=110.5, phosphorus_P=92.5, potassium_K=125.3",1 [Optimal High Yield],1 [Optimal High Yield],[CORRECT MATCH],SAFE_TO_PREDICT,68.7%
+Smart Agriculture Recommendation,agriculture_crop.csv_sample_2,"nitrogen_N=79.5, phosphorus_P=59.8, potassium_K=18.4",1 [Optimal High Yield],0 [Low/Unsuitable Yield],[MISCLASSIFICATION],SAFE_TO_PREDICT,63.3%
+Smart Agriculture Recommendation,agriculture_crop.csv_sample_3,"nitrogen_N=109.3, phosphorus_P=9.6, potassium_K=68.9",1 [Optimal High Yield],1 [Optimal High Yield],[CORRECT MATCH],ABSTAIN_HUMAN_REVIEW,59.9%
+Cybersecurity Intrusion Detection,cyber_intrusion.csv_sample_1,"failed_logins=0.0, src_bytes=397.0, serror_rate=0.03",0 [Normal Network Traffic],0 [Normal Network Traffic],[CORRECT MATCH],SAFE_TO_PREDICT,99.8%
+Cybersecurity Intrusion Detection,cyber_intrusion.csv_sample_2,"failed_logins=0.0, src_bytes=225.0, serror_rate=0.2",0 [Normal Network Traffic],0 [Normal Network Traffic],[CORRECT MATCH],SAFE_TO_PREDICT,99.8%
+Cybersecurity Intrusion Detection,cyber_intrusion.csv_sample_3,"failed_logins=0.0, src_bytes=1102.0, serror_rate=0.44",0 [Normal Network Traffic],0 [Normal Network Traffic],[CORRECT MATCH],SAFE_TO_PREDICT,94.8%
+Medical Clinical Survival,clinical_survival.csv_sample_1,"age=60.0, ejection_fraction=30.0, serum_creatinine=1.0",0 [Surviving Patient],0 [Surviving Patient],[CORRECT MATCH],SAFE_TO_PREDICT,81.5%
+Medical Clinical Survival,clinical_survival.csv_sample_2,"age=60.0, ejection_fraction=35.0, serum_creatinine=0.9",0 [Surviving Patient],0 [Surviving Patient],[CORRECT MATCH],SAFE_TO_PREDICT,93.0%
+Medical Clinical Survival,clinical_survival.csv_sample_3,"age=60.0, ejection_fraction=60.0, serum_creatinine=1.5",0 [Surviving Patient],0 [Surviving Patient],[CORRECT MATCH],SAFE_TO_PREDICT,62.3%
+Macroeconomic Housing Valuation,california_housing.csv_sample_1,"MedInc=2.82, HouseAge=33.0, AveRooms=4.05",2.385,3.357,[Abs Error: 0.972 (40.7%)],SAFE_TO_PREDICT,85.0%
+Macroeconomic Housing Valuation,california_housing.csv_sample_2,"MedInc=4.36, HouseAge=11.0, AveRooms=5.42",3.297,1.980,[Abs Error: 1.317 (39.9%)],SAFE_TO_PREDICT,85.0%
+Macroeconomic Housing Valuation,california_housing.csv_sample_3,"MedInc=4.35, HouseAge=9.0, AveRooms=5.79",0.952,2.216,[Abs Error: 1.264 (132.8%)],SAFE_TO_PREDICT,85.0%
+Clean Energy Grid Load,energy_grid.csv_sample_1,"lag_1h_load_mw=4628.9, lag_24h_load_mw=4116.9, temperature_c=26.0",3675.400,3708.681,[Abs Error: 33.281 (0.9%)],SAFE_TO_PREDICT,85.0%
+Clean Energy Grid Load,energy_grid.csv_sample_2,"lag_1h_load_mw=4406.3, lag_24h_load_mw=4895.8, temperature_c=30.4",4701.700,4751.634,[Abs Error: 49.934 (1.1%)],SAFE_TO_PREDICT,85.0%
+Clean Energy Grid Load,energy_grid.csv_sample_3,"lag_1h_load_mw=3023.5, lag_24h_load_mw=2858.3, temperature_c=12.8",3178.200,3208.288,[Abs Error: 30.088 (0.9%)],SAFE_TO_PREDICT,85.0%
+Environmental Air Quality (AQI),air_quality.csv_sample_1,"ambient_temp_c=20.4, relative_humidity=56.2, wind_speed_ms=11.2",5.000,1.009,[Abs Error: 3.991 (79.8%)],SAFE_TO_PREDICT,85.0%
+Environmental Air Quality (AQI),air_quality.csv_sample_2,"ambient_temp_c=13.1, relative_humidity=56.4, wind_speed_ms=10.9",77.900,75.245,[Abs Error: 2.655 (3.4%)],SAFE_TO_PREDICT,85.0%
+Environmental Air Quality (AQI),air_quality.csv_sample_3,"ambient_temp_c=19.8, relative_humidity=64.5, wind_speed_ms=9.7",5.000,-7.517,[Abs Error: 12.517 (250.3%)],SAFE_TO_PREDICT,85.0%

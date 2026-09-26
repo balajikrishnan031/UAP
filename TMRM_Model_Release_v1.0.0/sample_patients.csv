@@ -1,0 +1,4 @@
+patient_id,age,sex,cp,trestbps,chol,fbs,restecg,thalach,exang,oldpeak,slope,ca,thal
+Patient_001_Healthy,45.0,1.0,2.0,120.0,210.0,0.0,0.0,175.0,0.0,0.2,1.0,0.0,3.0
+Patient_002_HighRisk,62.0,1.0,4.0,150.0,285.0,1.0,2.0,125.0,1.0,2.8,2.0,2.0,7.0
+Patient_003_Borderline,54.0,0.0,3.0,135.0,245.0,0.0,1.0,152.0,0.0,1.2,1.0,0.0,3.0

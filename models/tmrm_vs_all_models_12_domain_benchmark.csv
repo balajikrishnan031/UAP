@@ -1,0 +1,13 @@
+Domain,Task,Metric,TMRM,GradientBoosting,RandomForest,Linear_Baseline,Winner,TMRM_vs_GB,TMRM_vs_RF,TMRM_Speed_s
+Heart Disease (Cardiology),classification,Macro-F1,0.8811,0.8552,0.8289,0.8683,TMRM,0.0258,0.0521,0.01
+Breast Cancer (Diagnostics),classification,Macro-F1,0.955,0.9557,0.9705,0.9778,Linear/Ridge,-0.0007,-0.0154,0.01
+Clinical Survival (Medical Risk),classification,Macro-F1,0.5515,0.7106,0.7435,0.7475,Linear/Ridge,-0.1591,-0.192,0.0
+Credit Risk (FinTech Default),classification,Macro-F1,0.6808,0.6784,0.6591,0.6778,TMRM,0.0024,0.0217,0.01
+Fraud Detection (Transactions),classification,Macro-F1,0.5424,0.497,0.497,0.498,TMRM,0.0454,0.0454,0.0
+Telecom Churn (Customer Retention),classification,Macro-F1,0.6756,0.6176,0.6668,0.665,TMRM,0.058,0.0088,0.0
+IoT Maintenance (Sensors),classification,Macro-F1,0.8679,0.8682,0.8578,0.8836,Linear/Ridge,-0.0002,0.0101,0.0
+Cyber Intrusion (Cybersecurity),classification,Macro-F1,0.9027,0.9751,0.9185,0.9027,GradientBoosting,-0.0724,-0.0158,0.01
+Agriculture Crop (Smart Farming),classification,Macro-F1,0.6325,0.7552,0.7126,0.6738,GradientBoosting,-0.1228,-0.0801,0.01
+Energy Grid (Power Demand),regression,R^2 Score,0.9809,0.9767,0.9791,0.9237,TMRM,0.0042,0.0018,0.02
+Air Quality (Environmental AQI),regression,R^2 Score,0.9714,0.9589,0.9538,0.9756,Linear/Ridge,0.0125,0.0176,0.02
+California Housing (Real Estate),regression,R^2 Score,0.5429,0.6735,0.6757,0.668,RandomForest,-0.1306,-0.1327,0.02

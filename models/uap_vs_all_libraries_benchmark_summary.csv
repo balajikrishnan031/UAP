@@ -1,0 +1,13 @@
+Domain,Dataset,Task,UAP_Model,UAP_Score,Best_Competitor,Competitor_Score,UAP_Advantage
+Diagnostic Oncology,breast_cancer.csv,Classification,LightGBMClassifier,Acc: 95.61% | F1: 0.9526,LightGBM (Microsoft),F1: 0.9619,-0.0093 F1
+Clinical Cardiology,heart_disease.csv,Classification,LightGBMClassifier,Acc: 88.52% | F1: 0.8851,Random Forest (sklearn),F1: 0.8851,+0.0000 F1
+Banking & Credit Risk,credit_risk.csv,Classification,XGBoostClassifier,Acc: 74.50% | F1: 0.6979,Random Forest (sklearn),F1: 0.7020,-0.0041 F1
+Fintech & Fraud Detection,fraud_detection.csv,Classification,Stacking_Ensemble_LightGBMClassifier_XGBoostClassifier,Acc: 99.00% | F1: 0.7702,XGBoost (DMLC),F1: 0.6783,+0.0919 F1
+Industrial IoT Maintenance,iot_maintenance.csv,Classification,LogisticRegression,Acc: 85.00% | F1: 0.8400,Linear (Logistic Regression),F1: 0.8715,-0.0315 F1
+Telecom Customer Churn,telecom_churn.csv,Classification,XGBoostClassifier,Acc: 65.80% | F1: 0.6492,Linear (Logistic Regression),F1: 0.6580,-0.0088 F1
+Smart Agriculture Recommendation,agriculture_crop.csv,Classification,RandomForestClassifier,Acc: 84.32% | F1: 0.7849,Random Forest (sklearn),F1: 0.7825,+0.0025 F1
+Cybersecurity Intrusion Detection,cyber_intrusion.csv,Classification,LightGBMClassifier,Acc: 99.00% | F1: 0.9640,Random Forest (sklearn),F1: 0.9640,+0.0000 F1
+Medical Clinical Survival,clinical_survival.csv,Classification,Stacking_Ensemble_RandomForestClassifier_ExtraTreesClassifier,Acc: 83.33% | F1: 0.7948,Random Forest (sklearn),F1: 0.7948,+0.0000 F1
+Macroeconomic Housing Valuation,california_housing.csv,Regression,Stacking_Ensemble_XGBoostRegressor_CatBoostRegressor,R2: 0.7730 | RMSE: 0.5375,LightGBM (Microsoft),R2: 0.7738,-0.0008 R2
+Clean Energy Grid Load,energy_grid.csv,Regression,Stacking_Ensemble_XGBoostRegressor_CatBoostRegressor,R2: 0.9937 | RMSE: 65.5498,LightGBM (Microsoft),R2: 0.9937,+0.0000 R2
+Environmental Air Quality (AQI),air_quality.csv,Regression,Stacking_Ensemble_RidgeRegressor_XGBoostRegressor,R2: 0.9781 | RMSE: 4.1497,Linear (Ridge),R2: 0.9775,+0.0006 R2
