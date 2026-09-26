@@ -63,6 +63,8 @@ class TopologicalManifoldResonantMachine:
         # Learned Manifolds & Projection
         self.class_manifolds_: Dict[Any, List[Dict[str, Any]]] = {}
         self.class_weights_: Dict[Any, float] = {}
+        self.flat_resonators_: List[Dict[str, Any]] = []
+        self.dual_weights_: Optional[np.ndarray] = None
         self.regression_resonators_: List[Dict[str, Any]] = []
         self.all_centroids_: np.ndarray = np.empty((0, 0))
         self.feature_means_: np.ndarray = None
@@ -160,7 +162,7 @@ class TopologicalManifoldResonantMachine:
     def _auto_k_resonators(self, n_samples: int) -> int:
         if isinstance(self.n_resonators, int):
             return max(1, self.n_resonators)
-        return int(np.clip(np.sqrt(n_samples / 4.0), 2, 12))
+        return int(np.clip(np.sqrt(n_samples / 4.0), 3, 25))
 
     def fit(self, X: Union[np.ndarray, pd.DataFrame, Any], y: Union[np.ndarray, pd.Series, Any]) -> "TopologicalManifoldResonantMachine":
         """Fit TMRM universal model to ANY dataset."""
@@ -237,11 +239,12 @@ class TopologicalManifoldResonantMachine:
             within_var = np.maximum(within_var, 1e-4)
             fisher_ratio = between_var / within_var
             fisher_ratio = fisher_ratio / (np.mean(fisher_ratio) + 1e-8)
-            feature_weights = np.clip(fisher_ratio, 0.2, 5.0)
+            feature_weights = np.clip(np.sqrt(fisher_ratio), 0.5, 3.0)
 
         self.feature_weights_ = feature_weights
         self.class_manifolds_ = {}
         self.class_weights_ = {}
+        self.flat_resonators_ = []
         all_centers_list = []
         n_total = len(y_arr)
 
@@ -291,17 +294,42 @@ class TopologicalManifoldResonantMachine:
                     })
 
                 all_centers_list.append(center_k)
-                resonators.append({
+                res_obj = {
                     "center": center_k,
                     "inv_metric": inv_metric,
                     "weight": float(len(cluster_pts) / n_c),
-                    "octave_vectors": octave_vectors
-                })
+                    "octave_vectors": octave_vectors,
+                    "class": c
+                }
+                resonators.append(res_obj)
+                self.flat_resonators_.append(res_obj)
 
             self.class_manifolds_[c] = resonators
 
         self.all_centroids_ = np.array(all_centers_list)
         self.calibrated_temperature_ = max(0.5, float(self.temperature))
+
+        # Solve Closed-Form Dual Contrastive Coupling Matrix (Wave Superposition & Antiphase Cancellation)
+        n_res = len(self.flat_resonators_)
+        if n_res > 0:
+            n_samples = len(X_norm)
+            Phi = np.zeros((n_samples, n_res))
+            for j, res in enumerate(self.flat_resonators_):
+                delta = (X_norm - res["center"]) * np.sqrt(self.feature_weights_)
+                d_sq = np.clip(np.sum((delta @ res["inv_metric"]) * delta, axis=1), 0, 100.0)
+                d_l1 = np.sum(np.abs(delta), axis=1) / np.sqrt(self.effective_dim_)
+                psi = 1.0
+                for oct_info in res["octave_vectors"]:
+                    proj = np.dot(delta, oct_info["freq_vector"]) + oct_info["phase"]
+                    psi += 0.05 * oct_info["weight"] * np.cos(proj)
+                Phi[:, j] = (0.65 * np.exp(-0.5 * d_sq) + 0.35 * np.exp(-0.9 * d_l1)) * psi
+
+            Y_onehot = np.zeros((n_samples, self.n_classes_))
+            for i, c in enumerate(self.classes_):
+                Y_onehot[y_arr == c, i] = 1.0
+
+            lambda_reg = 0.05 * np.mean(np.diag(Phi.T @ Phi))
+            self.dual_weights_ = np.linalg.solve(Phi.T @ Phi + np.eye(n_res) * lambda_reg, Phi.T @ Y_onehot)
 
     def _fit_regression(self, X_norm: np.ndarray, y_arr: np.ndarray, rng: np.random.RandomState):
         n_samples = len(X_norm)
@@ -408,10 +436,31 @@ class TopologicalManifoldResonantMachine:
         X_norm = self._standardize(X_imputed)
 
         resonances, _ = self._compute_classification_energy(X_norm)
+        log_wave = np.log(np.maximum(resonances, 1e-12))
+        log_wave -= np.max(log_wave, axis=1, keepdims=True)
+
+        if self.dual_weights_ is not None and len(self.flat_resonators_) > 0:
+            n_samples = len(X_norm)
+            n_res = len(self.flat_resonators_)
+            Phi = np.zeros((n_samples, n_res))
+            for j, res in enumerate(self.flat_resonators_):
+                delta = (X_norm - res["center"]) * np.sqrt(self.feature_weights_)
+                d_sq = np.clip(np.sum((delta @ res["inv_metric"]) * delta, axis=1), 0, 100.0)
+                d_l1 = np.sum(np.abs(delta), axis=1) / np.sqrt(self.effective_dim_)
+                psi = 1.0
+                for oct_info in res["octave_vectors"]:
+                    proj = np.dot(delta, oct_info["freq_vector"]) + oct_info["phase"]
+                    psi += 0.05 * oct_info["weight"] * np.cos(proj)
+                Phi[:, j] = (0.65 * np.exp(-0.5 * d_sq) + 0.35 * np.exp(-0.9 * d_l1)) * psi
+
+            contrast_scores = Phi @ self.dual_weights_
+            contrast_scores -= np.max(contrast_scores, axis=1, keepdims=True)
+            net_energy = 0.25 * log_wave + 0.75 * contrast_scores
+        else:
+            net_energy = log_wave
+
         tau = max(0.1, self.calibrated_temperature_)
-        log_energy = np.log(np.maximum(resonances, 1e-12)) / tau
-        log_energy -= np.max(log_energy, axis=1, keepdims=True)
-        exp_energy = np.exp(log_energy)
+        exp_energy = np.exp(net_energy / tau)
         probs = exp_energy / np.sum(exp_energy, axis=1, keepdims=True)
         return probs
 
