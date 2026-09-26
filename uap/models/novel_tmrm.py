@@ -35,6 +35,7 @@ class TopologicalManifoldResonantMachine:
         self,
         task_type: str = "auto",  # 'auto', 'classification', 'regression'
         n_resonators: Union[int, str] = "auto",
+        n_subspaces: int = 4,
         harmonic_octaves: int = 3,
         metric_regularization: float = 1e-3,
         novelty_threshold: float = 2.5,
@@ -45,6 +46,7 @@ class TopologicalManifoldResonantMachine:
     ):
         self.task_type = task_type
         self.n_resonators = n_resonators
+        self.n_subspaces = n_subspaces
         self.harmonic_octaves = harmonic_octaves
         self.reg = metric_regularization
         self.novelty_threshold = novelty_threshold
@@ -65,6 +67,7 @@ class TopologicalManifoldResonantMachine:
         self.class_weights_: Dict[Any, float] = {}
         self.flat_resonators_: List[Dict[str, Any]] = []
         self.dual_weights_: Optional[np.ndarray] = None
+        self.subspaces_: List[Tuple[np.ndarray, float]] = []
         self.regression_resonators_: List[Dict[str, Any]] = []
         self.all_centroids_: np.ndarray = np.empty((0, 0))
         self.feature_means_: np.ndarray = None
@@ -309,27 +312,47 @@ class TopologicalManifoldResonantMachine:
         self.all_centroids_ = np.array(all_centers_list)
         self.calibrated_temperature_ = max(0.5, float(self.temperature))
 
-        # Solve Closed-Form Dual Contrastive Coupling Matrix (Wave Superposition & Antiphase Cancellation)
+        # Multi-Faceted Resonant Spectrum (Riemannian L2 + Chebyshev Box L_inf + Manhattan L1)
         n_res = len(self.flat_resonators_)
         if n_res > 0:
             n_samples = len(X_norm)
-            Phi = np.zeros((n_samples, n_res))
+            Phi_primary = np.zeros((n_samples, n_res))
             for j, res in enumerate(self.flat_resonators_):
                 delta = (X_norm - res["center"]) * np.sqrt(self.feature_weights_)
                 d_sq = np.clip(np.sum((delta @ res["inv_metric"]) * delta, axis=1), 0, 100.0)
+                d_cheb = np.max(np.abs(delta), axis=1)
                 d_l1 = np.sum(np.abs(delta), axis=1) / np.sqrt(self.effective_dim_)
                 psi = 1.0
                 for oct_info in res["octave_vectors"]:
                     proj = np.dot(delta, oct_info["freq_vector"]) + oct_info["phase"]
                     psi += 0.05 * oct_info["weight"] * np.cos(proj)
-                Phi[:, j] = (0.65 * np.exp(-0.5 * d_sq) + 0.35 * np.exp(-0.9 * d_l1)) * psi
+                Phi_primary[:, j] = (0.40 * np.exp(-0.5 * d_sq) + 0.35 * np.exp(-0.75 * d_cheb) + 0.25 * np.exp(-0.9 * d_l1)) * psi
+
+            # Topological Subspace Wave-Packets (Multi-Manifold Dimensional Bagging)
+            self.subspaces_ = []
+            Phi_subspaces = []
+            sub_dim = max(2, int(np.sqrt(self.effective_dim_) * 1.5))
+            if sub_dim < self.effective_dim_ and self.n_subspaces > 1:
+                gamma_sub = 1.0 / (2.0 * (self.global_bandwidth_ ** 2))
+                for s in range(self.n_subspaces):
+                    feats = rng.choice(self.effective_dim_, size=sub_dim, replace=False)
+                    X_sub = (X_norm * np.sqrt(self.feature_weights_))[:, feats]
+                    C_sub = (self.all_centroids_ * np.sqrt(self.feature_weights_))[:, feats]
+                    D2_sub = cdist(X_sub, C_sub, metric='sqeuclidean')
+                    D_cheb_sub = cdist(X_sub, C_sub, metric='chebyshev')
+                    phi_s = 0.50 * np.exp(-gamma_sub * D2_sub) + 0.50 * np.exp(-0.8 * D_cheb_sub)
+                    Phi_subspaces.append(phi_s)
+                    self.subspaces_.append((feats, gamma_sub))
+                Phi_full = np.hstack([Phi_primary] + Phi_subspaces)
+            else:
+                Phi_full = Phi_primary
 
             Y_onehot = np.zeros((n_samples, self.n_classes_))
             for i, c in enumerate(self.classes_):
                 Y_onehot[y_arr == c, i] = 1.0
 
-            lambda_reg = 0.05 * np.mean(np.diag(Phi.T @ Phi))
-            self.dual_weights_ = np.linalg.solve(Phi.T @ Phi + np.eye(n_res) * lambda_reg, Phi.T @ Y_onehot)
+            lambda_reg = 0.05 * np.mean(np.diag(Phi_full.T @ Phi_full))
+            self.dual_weights_ = np.linalg.solve(Phi_full.T @ Phi_full + np.eye(Phi_full.shape[1]) * lambda_reg, Phi_full.T @ Y_onehot)
 
     def _fit_regression(self, X_norm: np.ndarray, y_arr: np.ndarray, rng: np.random.RandomState):
         n_samples = len(X_norm)
@@ -442,18 +465,32 @@ class TopologicalManifoldResonantMachine:
         if self.dual_weights_ is not None and len(self.flat_resonators_) > 0:
             n_samples = len(X_norm)
             n_res = len(self.flat_resonators_)
-            Phi = np.zeros((n_samples, n_res))
+            Phi_primary = np.zeros((n_samples, n_res))
             for j, res in enumerate(self.flat_resonators_):
                 delta = (X_norm - res["center"]) * np.sqrt(self.feature_weights_)
                 d_sq = np.clip(np.sum((delta @ res["inv_metric"]) * delta, axis=1), 0, 100.0)
+                d_cheb = np.max(np.abs(delta), axis=1)
                 d_l1 = np.sum(np.abs(delta), axis=1) / np.sqrt(self.effective_dim_)
                 psi = 1.0
                 for oct_info in res["octave_vectors"]:
                     proj = np.dot(delta, oct_info["freq_vector"]) + oct_info["phase"]
                     psi += 0.05 * oct_info["weight"] * np.cos(proj)
-                Phi[:, j] = (0.65 * np.exp(-0.5 * d_sq) + 0.35 * np.exp(-0.9 * d_l1)) * psi
+                Phi_primary[:, j] = (0.40 * np.exp(-0.5 * d_sq) + 0.35 * np.exp(-0.75 * d_cheb) + 0.25 * np.exp(-0.9 * d_l1)) * psi
 
-            contrast_scores = Phi @ self.dual_weights_
+            if len(self.subspaces_) > 0:
+                Phi_subs = []
+                for feats, gamma_sub in self.subspaces_:
+                    X_sub = (X_norm * np.sqrt(self.feature_weights_))[:, feats]
+                    C_sub = (self.all_centroids_ * np.sqrt(self.feature_weights_))[:, feats]
+                    D2_sub = cdist(X_sub, C_sub, metric='sqeuclidean')
+                    D_cheb_sub = cdist(X_sub, C_sub, metric='chebyshev')
+                    phi_s = 0.50 * np.exp(-gamma_sub * D2_sub) + 0.50 * np.exp(-0.8 * D_cheb_sub)
+                    Phi_subs.append(phi_s)
+                Phi_full = np.hstack([Phi_primary] + Phi_subs)
+            else:
+                Phi_full = Phi_primary
+
+            contrast_scores = Phi_full @ self.dual_weights_
             contrast_scores -= np.max(contrast_scores, axis=1, keepdims=True)
             net_energy = 0.25 * log_wave + 0.75 * contrast_scores
         else:
