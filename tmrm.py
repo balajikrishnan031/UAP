@@ -38,7 +38,7 @@ class TopologicalManifoldResonantMachine:
         harmonic_octaves: int = 3,
         metric_regularization: float = 1e-3,
         novelty_threshold: float = 2.5,
-        focal_gamma: float = 0.5,
+        focal_gamma: float = 0.0,
         max_latent_dim: int = 128,
         temperature: float = 1.0,
         random_state: int = 42
