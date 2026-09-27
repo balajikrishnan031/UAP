@@ -426,17 +426,16 @@ class TopologicalManifoldResonantMachine:
         corrs = np.nan_to_num(corrs, nan=0.0)
         self.feature_weights_ = np.clip(np.abs(corrs) * 3.0 + 0.3, 0.2, 5.0)
 
-        k_clusters = min(self._auto_k_resonators(n_samples) * 3, max(4, n_samples // 3))
+        k_clusters = max(6, min(40, int(np.sqrt(n_samples) * 1.5)))
         centers = [X_norm[rng.randint(0, n_samples)]]
         for _ in range(1, k_clusters):
             dists = cdist(X_norm, np.array(centers), metric='sqeuclidean').min(axis=1)
             probs = dists / (dists.sum() + 1e-12)
             centers.append(X_norm[rng.choice(n_samples, p=probs)])
-        centers = np.array(centers)
+        self.all_centroids_ = np.array(centers)
 
-        assignments = cdist(X_norm, centers, metric='euclidean').argmin(axis=1)
+        assignments = cdist(X_norm, self.all_centroids_, metric='euclidean').argmin(axis=1)
         self.regression_resonators_ = []
-        all_centers_list = []
 
         for k in range(k_clusters):
             cluster_pts = X_norm[assignments == k]
@@ -445,7 +444,7 @@ class TopologicalManifoldResonantMachine:
                 cluster_pts = X_norm
                 cluster_y = y_arr
 
-            center_k = np.mean(cluster_pts, axis=0)
+            center_k = self.all_centroids_[k]
             diff = (cluster_pts - center_k) * np.sqrt(self.feature_weights_)
             cov_k = (diff.T @ diff) / max(1, len(cluster_pts) - 1)
             cov_reg = cov_k + np.eye(self.effective_dim_) * (self.reg * self.global_bandwidth_)
@@ -476,7 +475,6 @@ class TopologicalManifoldResonantMachine:
                 beta = np.zeros(self.effective_dim_ + 1)
                 beta[0] = np.mean(cluster_y)
 
-            all_centers_list.append(center_k)
             self.regression_resonators_.append({
                 "center": center_k,
                 "beta_0": float(beta[0]),
@@ -486,18 +484,17 @@ class TopologicalManifoldResonantMachine:
                 "weight": float(len(cluster_pts) / n_samples)
             })
 
-        self.all_centroids_ = np.array(all_centers_list)
-
         # Build Multi-Faceted Spectral Basis for Regression
         Phi_primary = self._compute_regression_primary_basis(X_norm)
 
-        # Subspace Wave-Packets for Regression
+        # Dense Subspace Wave-Packets for Regression
         sub_dim = max(2, int(np.sqrt(self.effective_dim_) * 1.5))
         self.subspaces_ = []
         Phi_sub = []
-        if sub_dim < self.effective_dim_ and self.n_subspaces > 1:
+        n_subs = max(self.n_subspaces, 6)
+        if sub_dim < self.effective_dim_ and n_subs > 1:
             gamma_sub = 1.0 / (2.0 * (self.global_bandwidth_ ** 2))
-            for _ in range(self.n_subspaces):
+            for _ in range(n_subs):
                 feats = rng.choice(self.effective_dim_, size=sub_dim, replace=False)
                 X_s = (X_norm * np.sqrt(self.feature_weights_))[:, feats]
                 C_s = (self.all_centroids_ * np.sqrt(self.feature_weights_))[:, feats]
@@ -510,7 +507,7 @@ class TopologicalManifoldResonantMachine:
         else:
             Phi_full = Phi_primary
 
-        # Closed-Form Dual Ridge Potential Superposition for Continuous Regression
+        # Closed-Form Dual Ridge Potential Superposition
         lambda_reg = 0.02 * np.mean(np.diag(Phi_full.T @ Phi_full))
         self.dual_weights_ = np.linalg.solve(
             Phi_full.T @ Phi_full + np.eye(Phi_full.shape[1]) * lambda_reg,
