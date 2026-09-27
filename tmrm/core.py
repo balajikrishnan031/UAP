@@ -282,6 +282,7 @@ class TopologicalManifoldResonantMachine:
         unique_y = np.unique(y_arr)
         self.classes_ = unique_y
         self.n_classes_ = len(unique_y)
+        self.class_priors_ = np.array([np.mean(y_arr == c) for c in self.classes_])
 
         # Fisher Discriminant Feature Relevance in Latent Space
         feature_weights = np.ones(self.effective_dim_)
@@ -554,6 +555,7 @@ class TopologicalManifoldResonantMachine:
                 delta = (X_norm - center) * np.sqrt(self.feature_weights_)
                 dist_sq = np.sum((delta @ inv_m) * delta, axis=1)
                 dist_sq = np.clip(dist_sq, 0, 100.0)
+                dist_cheb = np.max(np.abs(delta), axis=1)
                 dist_l1 = np.sum(np.abs(delta), axis=1) / np.sqrt(self.effective_dim_)
 
                 all_min_dists = np.minimum(all_min_dists, np.sqrt(dist_sq))
@@ -563,7 +565,8 @@ class TopologicalManifoldResonantMachine:
                     proj = np.dot(delta, oct_info["freq_vector"]) + oct_info["phase"]
                     psi += (0.10 * oct_info["weight"]) * np.cos(proj)
 
-                res_potential = w * (0.60 * np.exp(-0.5 * dist_sq) + 0.40 * np.exp(-0.9 * dist_l1)) * psi
+                w_l2, w_cheb, w_l1 = self.metric_weights_
+                res_potential = w * (w_l2 * np.exp(-0.5 * dist_sq) + w_cheb * np.exp(-0.75 * dist_cheb) + w_l1 * np.exp(-0.9 * dist_l1)) * psi
                 class_energy += res_potential
 
             resonances[:, c_idx] = class_energy * c_focal_weight

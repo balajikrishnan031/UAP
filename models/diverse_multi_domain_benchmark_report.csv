@@ -1,0 +1,9 @@
+Domain,Dataset,N,D,Classes/Target,TMRM,RandomForest,GradientBoosting,Winner,Delta_vs_Best
+Acoustics & Defense,Sonar (Mines vs Rocks),208,60,2,0.7692,0.8269,0.8654,GB,-0.0962
+Chemistry & Wine,Wine Chemical Cultivars,178,13,3,1.0,1.0,0.9556,TMRM,+0.0000
+Spatial Vision,Optical Handwritten Digits (0-9),800,64,10,0.88,0.99,0.95,RF,-0.1100
+Food Science / Sensory,Red Wine Quality Scoring,1599,11,Continuous,0.3718,0.5036,0.4243,RF,-0.1318
+Clinical Survival,Heart Failure Clinical Triage,299,12,2,0.7467,0.7333,0.7067,TMRM,+0.0133
+Financial Banking,German Credit Default Risk,1000,24,2,0.748,0.76,0.748,RF,-0.0120
+Industrial IoT,Turbofan Predictive Maintenance,1500,5,2,0.8853,0.8747,0.8773,TMRM,+0.0080
+Agronomy & Agriculture,Crop Soil Suitability,2200,7,2,0.7527,0.8091,0.7945,RF,-0.0564
