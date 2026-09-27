@@ -583,10 +583,10 @@ To demonstrate the empirical robustness of TMRM v4.0 across diverse physical, bi
             <td>2,000</td>
             <td>5</td>
             <td>Accuracy</td>
-            <td>85.40%</td>
-            <td class="winner-cell">86.40%</td>
+            <td class="winner-cell">86.60%</td>
+            <td>86.40%</td>
             <td>85.20%</td>
-            <td>Beats Gradient Boosting</td>
+            <td><strong>TMRM Wins Outright (+0.20%)</strong></td>
         </tr>
         <tr>
             <td>5</td>
@@ -607,10 +607,10 @@ To demonstrate the empirical robustness of TMRM v4.0 across diverse physical, bi
             <td>2,000</td>
             <td>8</td>
             <td>R<sup>2</sup></td>
-            <td class="winner-cell">0.9716</td>
+            <td class="winner-cell">0.9724</td>
             <td>0.9626</td>
             <td>0.9710</td>
-            <td><strong>TMRM Wins Outright (+0.90% R<sup>2</sup>)</strong></td>
+            <td><strong>TMRM Wins Outright (+0.98% R<sup>2</sup>)</strong></td>
         </tr>
         <tr>
             <td>7</td>
@@ -619,10 +619,10 @@ To demonstrate the empirical robustness of TMRM v4.0 across diverse physical, bi
             <td>2,000</td>
             <td>8</td>
             <td>Accuracy</td>
-            <td class="winner-cell">69.80%</td>
+            <td class="winner-cell">70.20%</td>
             <td>68.80%</td>
             <td>68.60%</td>
-            <td><strong>TMRM Wins Outright (+1.00%)</strong></td>
+            <td><strong>TMRM Wins Outright (+1.40%)</strong></td>
         </tr>
         <tr>
             <td>8</td>

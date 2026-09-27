@@ -41,7 +41,7 @@ class TopologicalManifoldResonantMachine:
         self,
         task_type: str = "auto",  # 'auto', 'classification', 'regression'
         n_resonators: Union[int, str] = "auto",
-        n_subspaces: int = 4,
+        n_subspaces: int = 6,
         harmonic_octaves: int = 3,
         metric_regularization: float = 1e-3,
         novelty_threshold: float = 2.5,
@@ -380,9 +380,10 @@ class TopologicalManifoldResonantMachine:
             self.subspaces_ = []
             Phi_subspaces = []
             sub_dim = max(2, int(np.sqrt(self.effective_dim_) * 1.5))
-            if sub_dim < self.effective_dim_ and self.n_subspaces > 1:
+            effective_n_subs = min(self.n_subspaces, max(2, n_samples // 45))
+            if sub_dim < self.effective_dim_ and effective_n_subs > 1:
                 gamma_sub = 1.0 / (2.0 * (self.global_bandwidth_ ** 2))
-                for s in range(self.n_subspaces):
+                for s in range(effective_n_subs):
                     feats = rng.choice(self.effective_dim_, size=sub_dim, replace=False)
                     X_sub = (X_norm * np.sqrt(self.feature_weights_))[:, feats]
                     C_sub = (self.all_centroids_ * np.sqrt(self.feature_weights_))[:, feats]
@@ -405,7 +406,8 @@ class TopologicalManifoldResonantMachine:
     def _compute_classification_primary_basis(self, X_norm: np.ndarray) -> np.ndarray:
         n_samples = len(X_norm)
         n_res = len(self.flat_resonators_)
-        Phi = np.zeros((n_samples, n_res))
+        # Multi-Bandwidth Dyadic Wavelet Spectrum: fundamental (1.0x), sharp (0.5x sigma), broad (2.0x sigma)
+        Phi = np.zeros((n_samples, n_res * 3))
         w_l2, w_cheb, w_l1 = self.metric_weights_
 
         for j, res in enumerate(self.flat_resonators_):
@@ -417,7 +419,13 @@ class TopologicalManifoldResonantMachine:
             for oct_info in res["octave_vectors"]:
                 proj = np.dot(delta, oct_info["freq_vector"]) + oct_info["phase"]
                 psi += 0.05 * oct_info["weight"] * np.cos(proj)
+
+            # Scale 1: Fundamental Bandwidth
             Phi[:, j] = (w_l2 * np.exp(-0.5 * d_sq) + w_cheb * np.exp(-0.75 * d_cheb) + w_l1 * np.exp(-0.9 * d_l1)) * psi
+            # Scale 2: Sharp Micro-Resolution (High-frequency jagged boundary support)
+            Phi[:, n_res + j] = (w_l2 * np.exp(-1.0 * d_sq) + w_cheb * np.exp(-1.5 * d_cheb)) * psi
+            # Scale 3: Broad Macro-Topological Wave (Low-frequency global trend support)
+            Phi[:, 2 * n_res + j] = (w_l2 * np.exp(-0.25 * d_sq) + w_cheb * np.exp(-0.35 * d_cheb) + w_l1 * np.exp(-0.45 * d_l1)) * psi
         return Phi
 
     def _fit_regression(self, X_norm: np.ndarray, y_arr: np.ndarray, rng: np.random.RandomState):
@@ -518,7 +526,8 @@ class TopologicalManifoldResonantMachine:
     def _compute_regression_primary_basis(self, X_norm: np.ndarray) -> np.ndarray:
         n_samples = len(X_norm)
         n_res = len(self.regression_resonators_)
-        Phi = np.zeros((n_samples, n_res))
+        # Multi-Bandwidth Dyadic Wavelet Spectrum: fundamental, sharp micro-resolution, broad macro trend
+        Phi = np.zeros((n_samples, n_res * 3))
         w_l2, w_cheb, w_l1 = self.metric_weights_
 
         for j, res in enumerate(self.regression_resonators_):
@@ -532,8 +541,12 @@ class TopologicalManifoldResonantMachine:
                 proj = np.dot(delta, oct_info["freq_vec"]) + oct_info["phase"]
                 psi += 0.05 * oct_info["weight"] * np.cos(proj)
 
-            res_phi = (w_l2 * np.exp(-0.5 * d_l2) + w_cheb * np.exp(-0.75 * d_cheb) + w_l1 * np.exp(-0.9 * d_l1)) * psi
-            Phi[:, j] = res_phi
+            # Scale 1: Fundamental Bandwidth
+            Phi[:, j] = (w_l2 * np.exp(-0.5 * d_l2) + w_cheb * np.exp(-0.75 * d_cheb) + w_l1 * np.exp(-0.9 * d_l1)) * psi
+            # Scale 2: Sharp Micro-Resolution
+            Phi[:, n_res + j] = (w_l2 * np.exp(-1.0 * d_l2) + w_cheb * np.exp(-1.5 * d_cheb)) * psi
+            # Scale 3: Broad Macro-Topological Wave
+            Phi[:, 2 * n_res + j] = (w_l2 * np.exp(-0.25 * d_l2) + w_cheb * np.exp(-0.35 * d_cheb) + w_l1 * np.exp(-0.45 * d_l1)) * psi
         return Phi
 
     def _compute_classification_energy(self, X_norm: np.ndarray) -> Tuple[np.ndarray, np.ndarray]:
