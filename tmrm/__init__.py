@@ -11,8 +11,8 @@ Quickstart:
     >>> predictions = model.predict(X_test)
 """
 
-__version__ = "2.5.0"
-__author__ = "Antigravity AI Team"
+__version__ = "4.0.0"
+__author__ = "Balaji Krishnan & Antigravity AI Team"
 
 from .core import (
     TMRM,
