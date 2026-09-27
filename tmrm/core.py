@@ -431,9 +431,33 @@ class TopologicalManifoldResonantMachine:
     def _fit_regression(self, X_norm: np.ndarray, y_arr: np.ndarray, rng: np.random.RandomState):
         """Unified Topological Manifold Continuous Resonant Regressor."""
         n_samples = len(X_norm)
-        corrs = np.array([np.corrcoef(X_norm[:, i], y_arr)[0, 1] for i in range(self.effective_dim_)])
-        corrs = np.nan_to_num(corrs, nan=0.0)
-        self.feature_weights_ = np.clip(np.abs(corrs) * 3.0 + 0.3, 0.2, 5.0)
+        # Non-Linear Hamiltonian Energy Feature Weighting (captures linear, rank, and parabolic energy relationships)
+        y_var = np.var(y_arr) + 1e-8
+        scores = np.zeros(self.effective_dim_)
+        ry = np.argsort(np.argsort(y_arr))
+
+        for i in range(self.effective_dim_):
+            xi = X_norm[:, i]
+            c_lin = abs(np.corrcoef(xi, y_arr)[0, 1]) if np.std(xi) > 1e-8 else 0.0
+            if np.isnan(c_lin):
+                c_lin = 0.0
+            rxi = np.argsort(np.argsort(xi))
+            c_rank = abs(np.corrcoef(rxi, ry)[0, 1])
+            if np.isnan(c_rank):
+                c_rank = 0.0
+
+            q = np.quantile(xi, [0.20, 0.40, 0.60, 0.80])
+            bins = np.digitize(xi, q)
+            b_means = [np.mean(y_arr[bins == b]) for b in range(5) if np.sum(bins == b) > 2]
+            c_energy = np.sqrt(np.var(b_means) / y_var) if len(b_means) > 1 else 0.0
+            scores[i] = max(c_lin, c_rank, c_energy)
+
+        s_norm = scores / (np.mean(scores) + 1e-8)
+        weights = np.clip(np.sqrt(s_norm) * 2.8 + 0.2, 0.1, 5.0)
+        if self.effective_dim_ > 8:
+            sorted_idx = np.argsort(scores)
+            weights[sorted_idx[:max(1, int(0.20 * self.effective_dim_))]] *= 0.25
+        self.feature_weights_ = weights
 
         k_clusters = max(6, min(40, int(np.sqrt(n_samples) * 1.5)))
         centers = [X_norm[rng.randint(0, n_samples)]]
@@ -517,7 +541,7 @@ class TopologicalManifoldResonantMachine:
             Phi_full = Phi_primary
 
         # Closed-Form Dual Ridge Potential Superposition
-        lambda_reg = 0.02 * np.mean(np.diag(Phi_full.T @ Phi_full))
+        lambda_reg = 0.005 * np.mean(np.diag(Phi_full.T @ Phi_full))
         self.dual_weights_ = np.linalg.solve(
             Phi_full.T @ Phi_full + np.eye(Phi_full.shape[1]) * lambda_reg,
             Phi_full.T @ y_arr
