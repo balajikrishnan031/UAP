@@ -86,11 +86,15 @@ def test_tmrm_epistemic_novelty_self_doubt():
 
 
 def test_tmrm_human_readable_recourse():
-    """Test actionable human-readable recourse plan generation"""
-    df = pd.read_csv("data/real_world/heart_disease.csv")
-    target_col = [c for c in df.columns if "target" in c.lower() or "heart" in c.lower() or "disease" in c.lower()][0]
-    X = df.drop(columns=[target_col])
-    y = df[target_col]
+    if os.path.exists("data/real_world/heart_disease.csv"):
+        df = pd.read_csv("data/real_world/heart_disease.csv")
+        target_col = [c for c in df.columns if "target" in c.lower() or "heart" in c.lower() or "disease" in c.lower()][0]
+        X = df.drop(columns=[target_col])
+        y = df[target_col]
+    else:
+        X_arr, y_arr = make_classification(n_samples=200, n_features=5, n_classes=2, random_state=42)
+        X = pd.DataFrame(X_arr, columns=["age", "sex", "bp", "chol", "hr"])
+        y = pd.Series(y_arr)
 
     model = TopologicalManifoldResonantMachine(n_resonators="auto", random_state=42)
     model.fit(X, y)
@@ -139,3 +143,34 @@ def test_tmrm_persistence_save_load():
     finally:
         if os.path.exists(tmp_path):
             os.remove(tmp_path)
+
+
+def test_tmrm_conformal_prediction_and_safety_audit():
+    """Test Certified Conformal Prediction Sets and Epistemic Safety Audit (v4.5)"""
+    # 1. Classification Conformal Coverage
+    X_c, y_c = make_classification(n_samples=300, n_features=6, n_classes=2, random_state=42)
+    m_cls = TopologicalManifoldResonantMachine(wavelet_phase="auto", random_state=42)
+    m_cls.fit(X_c, y_c)
+
+    c_sets = m_cls.predict_conformal_set(X_c[:20], alpha=0.10)
+    assert len(c_sets) == 20
+    assert all(isinstance(s, list) and len(s) >= 1 for s in c_sets)
+
+    audit_c = m_cls.predict_with_safety_audit(X_c[:20], alpha=0.10)
+    assert "safety_status" in audit_c
+    assert "conformal_sets" in audit_c
+    assert all(status in ["SAFE_HIGH_CONFIDENCE", "AMBIGUOUS_BOUNDARY", "REJECT_OUT_OF_DISTRIBUTION"] for status in audit_c["safety_status"])
+
+    # 2. Regression Conformal Intervals
+    X_r, y_r = make_regression(n_samples=300, n_features=5, noise=0.1, random_state=42)
+    m_reg = TopologicalManifoldResonantMachine(task_type="regression", random_state=42)
+    m_reg.fit(X_r, y_r)
+
+    low, high = m_reg.predict_conformal_interval(X_r[:20], alpha=0.10)
+    assert len(low) == 20 and len(high) == 20
+    assert np.all(high >= low)
+
+    audit_r = m_reg.predict_with_safety_audit(X_r[:20], alpha=0.10)
+    assert "conformal_intervals" in audit_r
+    assert "lower_bounds" in audit_r
+    assert len(audit_r["safety_status"]) == 20

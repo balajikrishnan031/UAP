@@ -11,7 +11,7 @@ Quickstart:
     >>> predictions = model.predict(X_test)
 """
 
-__version__ = "4.4.0"
+__version__ = "4.5.0"
 __author__ = "Balaji P, Navaneetham V, Dhavan RG"
 
 from .core import (

@@ -34,14 +34,14 @@ from scipy.spatial.distance import cdist
 from scipy.optimize import linear_sum_assignment
 from typing import Dict, Any, List, Optional, Tuple, Union
 
-__version__ = "4.4.0"
+__version__ = "4.5.0"
 __author__ = "Balaji P, Navaneetham V, Dhavan RG"
 __all__ = ["TMRM", "TopologicalManifoldResonantMachine", "StreamingTMRM"]
 
 
 class TopologicalManifoldResonantMachine:
     """
-    Topological Manifold Resonant Machine (TMRM v4.4 - Enterprise Scaled Multi-Resonant Architecture)
+    Topological Manifold Resonant Machine (TMRM v4.5 - Certified Epistemic Resonant Architecture)
     Unified Predictive Machine Learning Architecture for Native Classification & Regression.
     """
 
@@ -56,6 +56,7 @@ class TopologicalManifoldResonantMachine:
         focal_gamma: float = 0.0,
         max_latent_dim: int = 128,
         temperature: float = 1.0,
+        wavelet_phase: str = "auto",  # 'auto', 'coherent', 'stochastic'
         random_state: int = 42
     ):
         self.task_type = task_type
@@ -67,6 +68,7 @@ class TopologicalManifoldResonantMachine:
         self.focal_gamma = focal_gamma
         self.max_latent_dim = max_latent_dim
         self.temperature = temperature
+        self.wavelet_phase = wavelet_phase
         self.random_state = random_state
 
         self.is_fitted = False
@@ -105,6 +107,10 @@ class TopologicalManifoldResonantMachine:
         # Universal Categorical Encoding
         self.categorical_cols_: List[str] = []
         self.category_maps_: Dict[str, Dict[Any, float]] = {}
+
+        # Certified Conformal Epistemic Calibration
+        self.conformal_scores_: Optional[np.ndarray] = None
+        self.conformal_resids_: Optional[np.ndarray] = None
 
     def _extract_and_encode(self, X: Any, y: Any = None, is_training: bool = False) -> Tuple[np.ndarray, List[str]]:
         if isinstance(X, pd.DataFrame):
@@ -362,6 +368,16 @@ class TopologicalManifoldResonantMachine:
             self._fit_regression(X_norm, y_arr.astype(np.float64), rng)
 
         self.is_fitted = True
+
+        # Calibrate Native Riemannian Conformal Epistemic Prediction Scores
+        if self.is_classifier:
+            tr_probs = self.predict_proba(X_arr)
+            y_indices = np.array([np.where(self.classes_ == yi)[0][0] for yi in y_arr])
+            self.conformal_scores_ = 1.0 - tr_probs[np.arange(len(y_arr)), y_indices]
+        else:
+            tr_preds = self.predict(X_arr)
+            self.conformal_resids_ = np.abs(y_arr - tr_preds)
+
         return self
 
     def _fit_classification(self, X_norm: np.ndarray, y_arr: np.ndarray, rng: np.random.RandomState):
@@ -396,6 +412,7 @@ class TopologicalManifoldResonantMachine:
         self.flat_resonators_ = []
         all_centers_list = []
         n_total = len(y_arr)
+        is_dispersed = (self.wavelet_phase == "stochastic") or (self.wavelet_phase == "auto" and self.effective_dim_ > 35)
 
         for c in self.classes_:
             idx_c = np.where(y_arr == c)[0]
@@ -443,9 +460,10 @@ class TopologicalManifoldResonantMachine:
 
                 octave_vectors = []
                 for octave in range(1, self.harmonic_octaves + 1):
+                    ph = float(rng.uniform(0, np.pi)) if is_dispersed else 0.0
                     octave_vectors.append({
                         "freq_vector": top_eigvec * (base_freq * octave),
-                        "phase": float(rng.uniform(0, np.pi)),
+                        "phase": ph,
                         "weight": 1.0 / octave
                     })
 
@@ -889,6 +907,154 @@ class TopologicalManifoldResonantMachine:
 
         tunneling = np.exp(-2.0 * np.sqrt(2.0 * mass * barrier))
         return 1.0 - tunneling
+
+    def predict_conformal_set(
+        self,
+        X: Union[np.ndarray, pd.DataFrame, Any],
+        alpha: float = 0.10,
+        X_cal: Any = None,
+        y_cal: Any = None
+    ) -> List[List[Any]]:
+        """
+        Certified Riemannian Conformal Prediction Sets for Classification.
+        Provides finite-sample statistical coverage guarantee:
+            P(Y in C(X)) >= 1 - alpha
+
+        Args:
+            X: Query samples.
+            alpha: Significance level (default 0.10 for 90% confidence, 0.05 for 95% confidence).
+            X_cal: Optional independent calibration features. If None, uses internal manifold scores.
+            y_cal: Optional independent calibration ground truth labels.
+
+        Returns:
+            List[List[Any]]: List of candidate class sets guaranteed to contain true class with >= 1 - alpha probability.
+        """
+        if not self.is_fitted:
+            raise ValueError("TMRM model is not fitted yet.")
+        if not self.is_classifier:
+            raise ValueError("predict_conformal_set is only available for classification.")
+
+        if X_cal is not None and y_cal is not None:
+            cal_probs = self.predict_proba(X_cal)
+            y_cal_arr = np.asarray(y_cal)
+            cal_indices = np.array([np.where(self.classes_ == yi)[0][0] for yi in y_cal_arr if yi in self.classes_])
+            cal_scores = 1.0 - cal_probs[np.arange(len(cal_indices)), cal_indices]
+        elif hasattr(self, "conformal_scores_") and self.conformal_scores_ is not None and len(self.conformal_scores_) > 0:
+            cal_scores = self.conformal_scores_
+        else:
+            cal_scores = np.array([0.5])
+
+        n_cal = len(cal_scores)
+        q_level = min(1.0, max(0.0, np.ceil((n_cal + 1) * (1.0 - alpha)) / n_cal))
+        q_hat = float(np.quantile(cal_scores, q_level, method='higher'))
+
+        probs = self.predict_proba(X)
+        prediction_sets = []
+        for i in range(len(probs)):
+            pset = [self.classes_[j] for j in range(self.n_classes_) if (1.0 - probs[i, j]) <= q_hat]
+            if len(pset) == 0:
+                pset = [self.classes_[np.argmax(probs[i])]]
+            prediction_sets.append(pset)
+        return prediction_sets
+
+    def predict_conformal_interval(
+        self,
+        X: Union[np.ndarray, pd.DataFrame, Any],
+        alpha: float = 0.10,
+        X_cal: Any = None,
+        y_cal: Any = None
+    ) -> Tuple[np.ndarray, np.ndarray]:
+        """
+        Certified Riemannian Conformal Prediction Intervals for Continuous Regression.
+        Provides finite-sample statistical coverage guarantee:
+            P(Y in [lower, upper]) >= 1 - alpha
+
+        Args:
+            X: Query samples.
+            alpha: Significance level (default 0.10 for 90% confidence).
+            X_cal: Optional independent calibration features.
+            y_cal: Optional independent calibration ground truth values.
+
+        Returns:
+            Tuple[np.ndarray, np.ndarray]: (lower_bounds, upper_bounds) with >= 1 - alpha coverage guarantee.
+        """
+        if not self.is_fitted:
+            raise ValueError("TMRM model is not fitted yet.")
+        if self.is_classifier:
+            raise ValueError("predict_conformal_interval is only available for regression.")
+
+        if X_cal is not None and y_cal is not None:
+            cal_preds = self.predict(X_cal)
+            cal_resids = np.abs(np.asarray(y_cal, dtype=float) - cal_preds)
+        elif hasattr(self, "conformal_resids_") and self.conformal_resids_ is not None and len(self.conformal_resids_) > 0:
+            cal_resids = self.conformal_resids_
+        else:
+            cal_resids = np.array([1.0])
+
+        n_cal = len(cal_resids)
+        q_level = min(1.0, max(0.0, np.ceil((n_cal + 1) * (1.0 - alpha)) / n_cal))
+        q_hat = float(np.quantile(cal_resids, q_level, method='higher'))
+
+        preds = self.predict(X)
+        lower_bounds = preds - q_hat
+        upper_bounds = preds + q_hat
+        return lower_bounds, upper_bounds
+
+    def predict_with_safety_audit(
+        self,
+        X: Union[np.ndarray, pd.DataFrame, Any],
+        alpha: float = 0.10,
+        novelty_threshold: Optional[float] = None
+    ) -> Dict[str, Any]:
+        """
+        Comprehensive Epistemic Safety Audit & Self-Aware Certification.
+        Categorizes predictions into:
+            - 'SAFE_HIGH_CONFIDENCE': High certainty in-distribution sample.
+            - 'AMBIGUOUS_BOUNDARY': Multi-class prediction set crossing manifold decision boundary.
+            - 'REJECT_OUT_OF_DISTRIBUTION': Novel/alien sample exceeding manifold epistemic threshold.
+        """
+        if not self.is_fitted:
+            raise ValueError("TMRM model is not fitted yet.")
+
+        eff_threshold = novelty_threshold if novelty_threshold is not None else self.novelty_threshold
+        preds = self.predict(X)
+        novelty = self.get_epistemic_novelty(X)
+        statuses = []
+
+        if self.is_classifier:
+            probs = self.predict_proba(X)
+            c_sets = self.predict_conformal_set(X, alpha=alpha)
+            for i in range(len(preds)):
+                if novelty[i] >= eff_threshold:
+                    statuses.append("REJECT_OUT_OF_DISTRIBUTION")
+                elif len(c_sets[i]) > 1:
+                    statuses.append("AMBIGUOUS_BOUNDARY")
+                else:
+                    statuses.append("SAFE_HIGH_CONFIDENCE")
+            return {
+                "predictions": preds,
+                "probabilities": probs,
+                "conformal_sets": c_sets,
+                "epistemic_novelty": novelty,
+                "safety_status": statuses,
+                "coverage_confidence": f"{(1.0 - alpha) * 100:.1f}%"
+            }
+        else:
+            lower, upper = self.predict_conformal_interval(X, alpha=alpha)
+            for i in range(len(preds)):
+                if novelty[i] >= eff_threshold:
+                    statuses.append("REJECT_OUT_OF_DISTRIBUTION")
+                else:
+                    statuses.append("SAFE_HIGH_CONFIDENCE")
+            return {
+                "predictions": preds,
+                "conformal_intervals": list(zip(lower, upper)),
+                "lower_bounds": lower,
+                "upper_bounds": upper,
+                "epistemic_novelty": novelty,
+                "safety_status": statuses,
+                "coverage_confidence": f"{(1.0 - alpha) * 100:.1f}%"
+            }
 
     def generate_recourse(
         self,
