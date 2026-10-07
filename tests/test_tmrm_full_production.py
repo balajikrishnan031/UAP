@@ -18,7 +18,7 @@ from sklearn.datasets import make_classification, make_regression
 from sklearn.model_selection import train_test_split
 from sklearn.metrics import accuracy_score, f1_score, r2_score, mean_squared_error
 
-from uap.models.novel_tmrm import TopologicalManifoldResonantMachine
+from tmrm import TopologicalManifoldResonantMachine
 
 
 def test_tmrm_classification_pipeline():
