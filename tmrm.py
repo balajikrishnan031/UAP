@@ -34,15 +34,21 @@ from scipy.spatial.distance import cdist
 from scipy.optimize import linear_sum_assignment
 from typing import Dict, Any, List, Optional, Tuple, Union
 
-__version__ = "4.5.0"
+__version__ = "4.6.0"
 __author__ = "Balaji P, Navaneetham V, Dhavan RG"
 __all__ = ["TMRM", "TopologicalManifoldResonantMachine", "StreamingTMRM"]
 
 
 class TopologicalManifoldResonantMachine:
     """
-    Topological Manifold Resonant Machine (TMRM v4.5 - Certified Epistemic Resonant Architecture)
+    Topological Manifold Resonant Machine (TMRM v4.6 - Audited Multi-Axis Resonant Machine)
     Unified Predictive Machine Learning Architecture for Native Classification & Regression.
+    Incorporating:
+    - Multi-Axis Eigenvector Standing Wave Cavity Resonance
+    - Class-Balanced Generalized Cross-Validation (GCV) Adaptive Regularization
+    - Non-Linear Hamiltonian Mutual Rank Feature Weighting
+    - Discrete Hypercube Metric Adaptation (L1/Chebyshev for discrete binary data)
+    - Distant Cavity Background Noise Floor Suppression
     """
 
     def __init__(
@@ -341,8 +347,11 @@ class TopologicalManifoldResonantMachine:
         pw_dists = cdist(sample_subset[:100], sample_subset[:100], metric='euclidean')
         pos_dists = pw_dists[pw_dists > 0]
         self.global_bandwidth_ = float(np.median(pos_dists)) if len(pos_dists) > 0 else 1.0
-        if self.global_bandwidth_ <= 0:
-            self.global_bandwidth_ = 1.0
+        # Discrete Hypercube Structure Adaptation
+        n_unique_per_col = [len(np.unique(X_norm[:, j])) for j in range(self.effective_dim_)]
+        self.discreteness_index_ = float(np.mean([u <= 4 for u in n_unique_per_col]))
+        if self.discreteness_index_ > 0.50:
+            self.metric_weights_ = (0.25, 0.35, 0.40)
 
         if self.is_classifier:
             self._fit_classification(X_norm, y_arr, rng)
@@ -389,7 +398,7 @@ class TopologicalManifoldResonantMachine:
         imb_ratio = np.max(self.class_priors_) / max(1e-4, np.min(self.class_priors_))
         eff_gamma = self.focal_gamma if self.focal_gamma > 0 else (0.5 if imb_ratio > 1.4 else 0.0)
 
-        # Fisher Discriminant Feature Relevance in Latent Space
+        # Non-Linear Hamiltonian & Fisher Discriminant Feature Relevance in Latent Space
         feature_weights = np.ones(self.effective_dim_)
         if self.n_classes_ > 1:
             overall_mean = np.mean(X_norm, axis=0)
@@ -403,8 +412,18 @@ class TopologicalManifoldResonantMachine:
                     within_var += np.sum((X_c_temp - c_mean) ** 2, axis=0)
             within_var = np.maximum(within_var, 1e-4)
             fisher_ratio = between_var / within_var
-            fisher_ratio = fisher_ratio / (np.mean(fisher_ratio) + 1e-8)
-            feature_weights = np.clip(np.sqrt(fisher_ratio), 0.5, 3.0)
+
+            # Non-linear Mutual Rank Energy
+            rank_energy = np.zeros(self.effective_dim_)
+            ry = np.argsort(np.argsort(y_arr))
+            for j in range(self.effective_dim_):
+                xj = X_norm[:, j]
+                if np.std(xj) > 1e-6:
+                    rxj = np.argsort(np.argsort(xj))
+                    rank_energy[j] = abs(np.corrcoef(rxj, ry)[0, 1]) if len(np.unique(xj)) > 2 else fisher_ratio[j]
+
+            combined_scores = 0.60 * (fisher_ratio / (np.mean(fisher_ratio) + 1e-8)) + 0.40 * (rank_energy / (np.mean(rank_energy) + 1e-8))
+            feature_weights = np.clip(np.sqrt(combined_scores / (np.mean(combined_scores) + 1e-8)), 0.5, 3.0)
 
         self.feature_weights_ = feature_weights
         self.class_manifolds_ = {}
@@ -413,6 +432,7 @@ class TopologicalManifoldResonantMachine:
         all_centers_list = []
         n_total = len(y_arr)
         is_dispersed = (self.wavelet_phase == "stochastic") or (self.wavelet_phase == "auto" and self.effective_dim_ > 35)
+        use_multi_axis = (self.effective_dim_ >= 16) or (self.n_classes_ > 2)
 
         for c in self.classes_:
             idx_c = np.where(y_arr == c)[0]
@@ -455,17 +475,33 @@ class TopologicalManifoldResonantMachine:
                     inv_metric = np.eye(self.effective_dim_) / (self.global_bandwidth_ ** 2)
 
                 eigenvals, eigenvecs = np.linalg.eigh(cov_reg)
-                top_eigvec = eigenvecs[:, -1]
-                base_freq = 2.0 * np.pi / (np.sqrt(max(1e-4, eigenvals[-1])) + 1e-4)
-
                 octave_vectors = []
-                for octave in range(1, self.harmonic_octaves + 1):
-                    ph = float(rng.uniform(0, np.pi)) if is_dispersed else 0.0
-                    octave_vectors.append({
-                        "freq_vector": top_eigvec * (base_freq * octave),
-                        "phase": ph,
-                        "weight": 1.0 / octave
-                    })
+
+                if use_multi_axis:
+                    n_axes = min(3, self.effective_dim_)
+                    top_eval = max(1e-4, eigenvals[-1])
+                    for axis_idx in range(1, n_axes + 1):
+                        cur_eval = max(1e-4, eigenvals[-axis_idx])
+                        cur_eigvec = eigenvecs[:, -axis_idx]
+                        axis_weight = np.sqrt(cur_eval / top_eval)
+                        base_freq = 2.0 * np.pi / (np.sqrt(cur_eval) + 1e-4)
+                        for octave in range(1, self.harmonic_octaves + 1):
+                            ph = float(rng.uniform(0, np.pi)) if is_dispersed else 0.0
+                            octave_vectors.append({
+                                "freq_vector": cur_eigvec * (base_freq * octave),
+                                "phase": ph,
+                                "weight": (1.0 / octave) * axis_weight
+                            })
+                else:
+                    top_eigvec = eigenvecs[:, -1]
+                    base_freq = 2.0 * np.pi / (np.sqrt(max(1e-4, eigenvals[-1])) + 1e-4)
+                    for octave in range(1, self.harmonic_octaves + 1):
+                        ph = float(rng.uniform(0, np.pi)) if is_dispersed else 0.0
+                        octave_vectors.append({
+                            "freq_vector": top_eigvec * (base_freq * octave),
+                            "phase": ph,
+                            "weight": 1.0 / octave
+                        })
 
                 all_centers_list.append(center_k)
                 res_obj = {
@@ -529,13 +565,36 @@ class TopologicalManifoldResonantMachine:
             Phi_w = Phi_full * sqrt_w
             Y_w = Y_onehot * sqrt_w
 
-            lambda_reg = 0.05 * np.mean(np.diag(Phi_w.T @ Phi_w))
-            A = Phi_w.T @ Phi_w + np.eye(Phi_w.shape[1]) * lambda_reg
+            S = Phi_w.T @ Phi_w
             b = Phi_w.T @ Y_w
-            try:
-                self.dual_weights_ = np.linalg.solve(A, b)
-            except np.linalg.LinAlgError:
-                self.dual_weights_ = np.linalg.pinv(A) @ b
+            s_mean = np.mean(np.diag(S))
+
+            # Class-Balanced Weighted GCV Adaptive Regularization
+            if use_multi_axis:
+                candidate_scales = [0.005, 0.01, 0.02, 0.05, 0.10, 0.20]
+            else:
+                candidate_scales = [0.02, 0.04, 0.05, 0.06, 0.08]
+
+            best_gcv = float('inf')
+            best_weights = None
+
+            evals_S, evecs_S = np.linalg.eigh(S)
+            evals_S = np.maximum(evals_S, 1e-8)
+
+            for c_scale in candidate_scales:
+                lam = c_scale * s_mean
+                W_lam = evecs_S @ ((evecs_S.T @ b) / (evals_S[:, None] + lam))
+                Y_pred = Phi_w @ W_lam
+                weighted_rss = np.sum((Y_w - Y_pred) ** 2)
+                edf = np.sum(evals_S / (evals_S + lam))
+                denom = max(1e-4, 1.0 - (edf / n_samples)) ** 2
+                gcv_score = (weighted_rss / n_samples) / denom
+
+                if gcv_score < best_gcv:
+                    best_gcv = gcv_score
+                    best_weights = W_lam
+
+            self.dual_weights_ = best_weights if best_weights is not None else np.linalg.pinv(S + np.eye(S.shape[0]) * (0.05 * s_mean)) @ b
 
     def _compute_classification_primary_basis(self, X_norm: np.ndarray) -> np.ndarray:
         n_samples = len(X_norm)
@@ -748,6 +807,7 @@ class TopologicalManifoldResonantMachine:
 
                 w_l2, w_cheb, w_l1 = self.metric_weights_
                 res_potential = w * (w_l2 * np.exp(-0.5 * dist_sq) + w_cheb * np.exp(-0.75 * dist_cheb) + w_l1 * np.exp(-0.9 * dist_l1)) * psi
+                res_potential = np.where(res_potential > 1e-4, res_potential, 0.0)
                 class_energy += res_potential
 
             resonances[:, c_idx] = class_energy * c_focal_weight
